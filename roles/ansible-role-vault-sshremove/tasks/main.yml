@@ -1,0 +1,30 @@
+---
+# tasks file for ansible-role-vault-sshremove
+
+- name: Remove public key file
+  file:
+    path: "{{ ssh_public_key }}"
+    state: absent
+  delegate_to: localhost
+  run_once: yes
+
+- name: Remove TrustedUserCAKeys path to SSH config
+  lineinfile:
+    path: "{{ sshd_conf }}"
+    line: "TrustedUserCAKeys {{ ssh_public_key }}"
+    insertafter: "ListenAddress "
+    state: absent
+  notify: restart ssh
+  delegate_to: localhost
+  run_once: yes
+
+- name: Remove signed key file
+  file:
+    path: "{{ item }}"
+    state: absent
+  delegate_to: localhost
+  run_once: yes
+  become: no
+  loop:
+    - "/home/ansible/.ssh/id_rsa-cert.pub"
+

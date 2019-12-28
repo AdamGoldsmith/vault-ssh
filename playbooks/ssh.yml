@@ -1,0 +1,10 @@
+---
+
+- name: Sign SSH public key
+  hosts: localhost
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - { role: ansible-role-vault-ssh, tags: sign }
+

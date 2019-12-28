@@ -1,0 +1,96 @@
+---
+# tasks file for ansible-role-vault-ssh
+
+- name: Retrieve admin token locally
+  set_fact:
+    admin_keys: "{{ lookup('file','{{ vault_admintokenfile }}') | from_json }}"
+  delegate_to: localhost
+  become: no
+  run_once: yes
+
+- name: Retrieve root token locally
+  set_fact:
+    vault_keys: "{{ lookup('file','{{ vault_keysfile }}') | from_json }}"
+  delegate_to: localhost
+  become: no
+  run_once: yes
+
+- name: Create public key file
+  uri:
+    url: "https://{{ vault_addr }}:{{ vault_port }}/v1/ssh-client-signer/public_key"
+    validate_certs: no
+    method: GET
+    headers:
+      X-Vault-Token: "{{ admin_keys['auth']['client_token'] }}"
+    return_content: yes
+    status_code: 200
+    dest: "{{ ssh_public_key }}"
+    others:
+      owner: "root"
+      group: "root"
+      mode: 0644
+  delegate_to: localhost
+  run_once: yes
+
+- name: Add TrustedUserCAKeys path to SSH config
+  lineinfile:
+    path: "{{ sshd_conf }}"
+    line: "TrustedUserCAKeys {{ ssh_public_key }}"
+    insertafter: "ListenAddress "
+    state: present
+  notify: restart ssh
+  delegate_to: localhost
+  run_once: yes
+
+- name: Sign users public key
+  uri:
+    url: "https://{{ vault_addr }}:{{ vault_port }}/v1/ssh-client-signer/sign/ssh-client-role"
+    validate_certs: no
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_keys['root_token'] }}"
+    body: { "public_key": "{{ lookup('file', item) }}" }
+    body_format: json
+    return_content: yes
+    status_code: 200
+  register: signed_key
+  delegate_to: localhost
+  run_once: yes
+  become: no
+  loop:
+    - "/home/ansible/.ssh/id_rsa.pub"
+#    - "{{ user_ssh_keys }}"
+
+- name: Debug signed_key
+  debug:
+    msg: "{{ signed_key['results'][0]['json']['data']['signed_key'] | replace('\n', '') }}"
+  delegate_to: localhost
+  run_once: yes
+
+- name: Write signed key to file
+  copy:
+    content: "{{ signed_key['results'][0]['json']['data']['signed_key'] | replace('\n', '') }}"
+    dest: "{{ item }}"
+    mode: 0640
+  delegate_to: localhost
+  run_once: yes
+  become: no
+  loop:
+    - "/home/ansible/.ssh/id_rsa-cert.pub"
+
+- name: Get signed key enabled extensions
+  command: "ssh-keygen -Lf {{ item }}"
+  register: key_output
+  delegate_to: localhost
+  run_once: yes
+  become: no
+  loop:
+    - "/home/ansible/.ssh/id_rsa-cert.pub"
+
+- name: View signed key enabled extensions
+  debug:
+    var: key_output['results'][0]['stdout_lines']
+  delegate_to: localhost
+  run_once: yes
+  become: no
+
