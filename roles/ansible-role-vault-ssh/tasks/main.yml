@@ -15,7 +15,7 @@
   become: no
   run_once: yes
 
-- name: Create public key file
+- name: Get vault public key
   uri:
     url: "https://{{ vault_addr }}:{{ vault_port }}/v1/ssh-client-signer/public_key"
     validate_certs: no
@@ -38,7 +38,7 @@
     line: "TrustedUserCAKeys {{ ssh_public_key }}"
     insertafter: "ListenAddress "
     state: present
-  notify: restart ssh
+  notify: reload ssh
   delegate_to: localhost
   run_once: yes
 
