@@ -1,5 +1,4 @@
-ansible-role-vault-ssh
-======================
+# SSH Server & Client Certificate Authentication
 
 Sign user and host public SSH keys to allow time-leased SSH access
 
