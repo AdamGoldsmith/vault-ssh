@@ -1,30 +1,26 @@
 ---
-# tasks file for ansible-role-vault-sshremove
 
-- name: Remove public key file
-  file:
-    path: "{{ ssh_public_key }}"
-    state: absent
-  delegate_to: localhost
-  run_once: yes
-
-- name: Remove TrustedUserCAKeys path to SSH config
-  lineinfile:
-    path: "{{ sshd_conf }}"
-    line: "TrustedUserCAKeys {{ ssh_public_key }}"
-    insertafter: "ListenAddress "
-    state: absent
-  notify: restart ssh
-  delegate_to: localhost
-  run_once: yes
-
-- name: Remove signed key file
+- name: Remove trusted user keys & certificate files
+  vars:
+    ssh_files:
+      - "{{ ssh_user_ca_keys }}"
+      - "{{ ssh_host_key }}-cert.pub"
   file:
     path: "{{ item }}"
     state: absent
-  delegate_to: localhost
-  run_once: yes
-  become: no
-  loop:
-    - "/home/ansible/.ssh/id_rsa-cert.pub"
+  loop: "{{ ssh_files }}"
+
+- name: Remove trusted user keys & certificate from SSH config
+  vars:
+    ssh_config:
+      - param: "TrustedUserCAKeys"
+        value: "{{ ssh_user_ca_keys }}"
+      - param: "HostCertificate"
+        value: "{{ ssh_host_key }}-cert.pub"
+  lineinfile:
+    path: "{{ sshd_conf }}"
+    line: "{{ item['param'] }} {{ item['value'] }}"
+    state: absent
+  notify: reload ssh
+  loop: "{{ ssh_config }}"
 

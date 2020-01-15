@@ -1,5 +1,4 @@
 ---
-# handlers file for ansible-role-vault-ssh
 
 - name: Reload ssh (RedHat)
   listen: reload ssh

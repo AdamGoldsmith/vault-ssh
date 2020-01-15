@@ -1,10 +1,30 @@
 ---
 
-- name: Sign SSH public key
-  hosts: localhost
+- name: Configure SSH Server
+  hosts: ssh_server
   become: yes
-  gather_facts: yes
 
   roles:
-    - { role: ansible-role-vault-ssh, tags: sign }
+
+    - name: Configure SSH Server
+      role: ansible-role-vault-sshserver
+      tags:
+        - 'sshserver'
+
+    - name: Remove SSH config
+      role: ansible-role-vault-sshremove
+      tags:
+        - 'never'
+        - 'remove'
+
+- name: Configure SSH Client
+  hosts: ssh_client
+  become: yes
+
+  roles:
+
+    - name: Configure SSH Client
+      role: ansible-role-vault-sshclient
+      tags:
+        - 'sshclient'
 

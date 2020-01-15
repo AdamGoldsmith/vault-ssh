@@ -1,0 +1,101 @@
+---
+
+- name: Write vault client signing public key to trusted user CA keys file
+  uri:
+    url: "https://{{ vault_addr }}:{{ vault_port }}/v1/ssh-client-signer/public_key"
+    validate_certs: no
+    method: GET
+    status_code: 200
+    dest: "{{ ssh_user_ca_keys }}"
+    others:
+      owner: "root"
+      group: "root"
+      mode: 0644
+
+# Left this here incase signed keys should be appended
+# - name: Add TrustedUserCAKeys path to SSH config
+#   lineinfile:
+#     path: "{{ sshd_conf }}"
+#     line: "TrustedUserCAKeys {{ ssh_user_ca_keys }}"
+#     insertafter: "ListenAddress "
+#     state: present
+#   notify: reload ssh
+#   # TODO: Remove after testing locally
+#   # delegate_to: localhost
+#   # run_once: yes
+
+- name: Read host public key
+  slurp:
+    src: "{{ ssh_host_key }}.pub"
+  register: slurp_ssh_host_key
+
+# TODO: Remove this
+# - name: Debug host public key
+#   debug:
+#     msg:
+#       - "{{ ssh_host_key }}.pub"
+#       - "{{ slurp_ssh_host_key['content'] | b64decode }}"
+
+- name: Sign host public key
+  vars:
+    vault_keys: "{{ lookup('file', vault_sshkeysignertokenfile) | from_json }}"
+  uri:
+    url: "https://{{ vault_addr }}:{{ vault_port }}/v1/ssh-host-signer/sign/ssh-host-role"
+    validate_certs: no
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_keys['auth']['client_token'] }}"
+    body: {
+      "public_key": "{{ slurp_ssh_host_key['content'] | b64decode }}",
+      "cert_type": "host"
+    }
+    body_format: json
+    status_code: 200
+  no_log: yes
+  register: signed_host_key
+  become: no
+
+# TODO: Remove task
+# - name: Debug signed_host_key
+#   debug:
+#     # msg: "{{ signed_host_key['results'][0]['json']['data']['signed_key'] | replace('\n', '') }}"
+#     msg: "{{ signed_host_key['json']['data']['signed_key'] | replace('\n', '') }}"
+#   # delegate_to: localhost
+#   # run_once: yes
+
+- name: Write signed host key to file
+  copy:
+    content: "{{ signed_host_key['json']['data']['signed_key'] | replace('\n', '') }}"
+    dest: "{{ ssh_host_key }}-cert.pub"
+    mode: 0640
+  no_log: yes
+
+- name: Get signed host key enabled extensions
+  command: "ssh-keygen -Lf {{ ssh_host_key }}-cert.pub"
+  register: key_output
+  changed_when: no
+
+- name: View signed host key enabled extensions
+  debug:
+    var: key_output['stdout_lines']
+  become: no
+
+- name: Add keys & certificate to SSH config
+  vars:
+    ssh_config:
+      - param: "TrustedUserCAKeys"
+        value: "{{ ssh_user_ca_keys }}"
+        after: "ListenAddress "
+      - param: "HostKey"
+        value: "{{ ssh_host_key }}"
+        after: "HostKey "
+      - param: "HostCertificate"
+        value: "{{ ssh_host_key }}-cert.pub"
+        after: "HostKey "
+  lineinfile:
+    path: "{{ sshd_conf }}"
+    line: "{{ item['param'] }} {{ item['value'] }}"
+    insertafter: "{{ item['after'] | default(omit) }}"
+    state: present
+  notify: reload ssh
+  loop: "{{ ssh_config }}"

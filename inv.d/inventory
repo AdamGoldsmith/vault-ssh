@@ -1,24 +1,15 @@
-[haproxy_master]
-haproxy_s1 ansible_host=10.1.42.11
-
-[haproxy_standby]
-haproxy_s2 ansible_host=10.1.42.12
-
-[haproxy:children]
-haproxy_master
-haproxy_standby
-
-[vault]
-vault_s1 ansible_host=10.1.42.201
-vault_s2 ansible_host=10.1.42.202
-vault_s3 ansible_host=10.1.42.203
-
-[consul]
+[ssh_server]
 consul_s1 ansible_host=10.1.42.101
-consul_s2 ansible_host=10.1.42.102
-consul_s3 ansible_host=10.1.42.103
-consul_s4 ansible_host=10.1.42.104
-consul_s5 ansible_host=10.1.42.105
+
+[ssh_server:vars]
+ssh_host_key="/etc/ssh/ssh_host_rsa_key"
+
+[ssh_client]
+vault_s1 ansible_host=10.1.42.201
+
+[ssh_client:vars]
+ssh_user_key="~/.ssh/id_rsa"
+ssh_user_name=vagrant
 
 [all:vars]
 ansible_user=vagrant

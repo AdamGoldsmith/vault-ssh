@@ -1,0 +1,12 @@
+---
+
+vault_sshkeysignertokenfile: "~/.hashicorp_sshkeysigner_token.json"
+vault_addr: "10.1.42.10"
+vault_port: "8200"
+ssh_user_name: "ansible"
+ssh_user_key: "/home/ansible/.ssh/id_rsa"
+# TODO: Consider using ssh_user_data instead
+# ssh_user_data:
+#   - name: "ansible"
+#     key_file: "/home/ansible/.ssh/id_rsa"
+ssh_known_hosts: "/etc/ssh/ssh_known_hosts"

@@ -1,0 +1,97 @@
+---
+
+- name: Get vault host signing CA public key
+  uri:
+    url: "https://{{ vault_addr }}:{{ vault_port }}/v1/ssh-host-signer/public_key"
+    validate_certs: no
+    method: GET
+    return_content: yes
+    status_code: 200
+  register: host_CA_pub_key
+
+- name: Debug host_CA_pub_key
+  debug:
+    var: host_CA_pub_key['content']
+
+- name: Write host signing CA public key to known_hosts
+  lineinfile:
+    path: "{{ ssh_known_hosts }}"
+    line: "@cert-authority * {{ host_CA_pub_key['content'] | replace('\n', '') }}"
+    state: present
+    create: yes
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Read user public key
+  slurp:
+    src: "{{ ssh_user_key }}.pub"
+  register: slurp_ssh_user_key
+
+# TODO: Remove
+# - name: Debug host public key
+#   vars:
+#     vault_keys: "{{ lookup('file', vault_sshkeysignertokenfile) | from_json }}"
+#   debug:
+#     msg:
+#       - "{{ vault_keys['auth']['client_token'] }}"
+#       - "{{ ssh_user_key }}.pub"
+#       - "{{ slurp_ssh_user_key['content'] | b64decode }}"
+
+# - pause:
+
+- name: Sign user public key
+  vars:
+    vault_keys: "{{ lookup('file', vault_sshkeysignertokenfile) | from_json }}"
+  uri:
+    url: "https://{{ vault_addr }}:{{ vault_port }}/v1/ssh-client-signer/sign/ssh-client-role"
+    validate_certs: no
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_keys['auth']['client_token'] }}"
+    body: {
+      "public_key": "{{ slurp_ssh_user_key['content'] | b64decode }}",
+      "valid_principals": "{{ ssh_user_name }}"
+    }
+    body_format: json
+    status_code: 200
+  no_log: yes
+  register: signed_user_key
+  become: no
+  # TODO: Consider looping a list of user/key data dicts here
+  # loop: "{{ ssh_user_data }}"
+
+- name: Debug signed_user_key
+  debug:
+    # msg: "{{ signed_user_key['results'][0]['json']['data']['signed_key'] | replace('\n', '') }}"
+    msg: "{{ signed_user_key['json']['data']['signed_key'] | replace('\n', '') }}"
+  # TODO: Consider looping a list of user/key data dicts here
+  # loop: "{{ ssh_user_data }}"
+
+- name: Write signed user key to file
+  copy:
+    # content: "{{ signed_user_key['results'][0]['json']['data']['signed_key'] | replace('\n', '') }}"
+    content: "{{ signed_user_key['json']['data']['signed_key'] | replace('\n', '') }}"
+    dest: "{{ ssh_user_key }}-cert.pub"
+    mode: 0640
+  no_log: yes
+  become: no
+  # TODO: Consider looping a list of user/key data dicts here
+  # loop: "{{ ssh_user_data }}"
+
+- name: Get signed user key enabled extensions
+  # command: "ssh-keygen -Lf {{ item | splitext | first }}-cert.pub"
+  command: "ssh-keygen -Lf {{ ssh_user_key }}-cert.pub"
+  register: key_output
+  changed_when: no
+  become: no
+  # TODO: Consider looping a list of user/key data dicts here
+  # loop: "{{ ssh_user_data }}"
+
+- name: View signed user key enabled extensions
+  debug:
+    # var: key_output['results'][0]['stdout_lines']
+    var: key_output['stdout_lines']
+  become: no
+  # TODO: Consider looping a list of user/key data dicts here
+  # loop: "{{ ssh_user_data }}"

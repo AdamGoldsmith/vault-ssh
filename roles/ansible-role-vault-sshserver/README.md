@@ -1,4 +1,4 @@
-Role : ansible-role-vault-configure
+Role : ansible-role-vault-sshserver
 ===================================
 
 Configure Hashicorp's vault by

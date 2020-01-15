@@ -1,4 +1,4 @@
-Role : ansible-role-vault-sshremove
+Role : ansible-role-vault-sshclient
 ===================================
 
 Configure Hashicorp's vault by
