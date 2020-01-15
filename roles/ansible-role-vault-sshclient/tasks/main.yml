@@ -27,18 +27,7 @@
   slurp:
     src: "{{ ssh_user_key }}.pub"
   register: slurp_ssh_user_key
-
-# TODO: Remove
-# - name: Debug host public key
-#   vars:
-#     vault_keys: "{{ lookup('file', vault_sshkeysignertokenfile) | from_json }}"
-#   debug:
-#     msg:
-#       - "{{ vault_keys['auth']['client_token'] }}"
-#       - "{{ ssh_user_key }}.pub"
-#       - "{{ slurp_ssh_user_key['content'] | b64decode }}"
-
-# - pause:
+  become: no
 
 - name: Sign user public key
   vars:
@@ -95,3 +84,4 @@
   become: no
   # TODO: Consider looping a list of user/key data dicts here
   # loop: "{{ ssh_user_data }}"
+
