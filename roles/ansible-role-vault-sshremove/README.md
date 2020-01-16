@@ -1,11 +1,11 @@
 Role : ansible-role-vault-sshremove
 ===================================
 
-Configure Hashicorp's vault by
-* Enabling audit logging
-* Creating policies
-* Creating new admin token
-* Creating tokens
+Unconfigure target's SSH daemon by
+* Removing host's trusted user CA keys file
+* Removing signed host certificate file
+* Removing trusted user CA keys file from sshd_config
+* Removing HostCertificate from sshd_config
 
 Currently tested on these Operating Systems
 * Oracle Linux/RHEL/CentOS
@@ -21,14 +21,9 @@ Role Variables
 
 defaults/main.yml
 ```
-vault_addr: "{{ ansible_fqdn }}"							# Vault listener address
-vault_port: "8200"									# Vault listener port
-vault_user: "vault"									# User to run the vault systemd service
-vault_group: "vault"									# Group for vault user
-vault_keysfile: "~/.hashicorp_vault_keys.json"						# Local file storing master key shards
-vault_admintokenfile									# Local file storing admin token
-vault_provisionertokenfile								# Local file storing provisioner token
-audit_path: "/var/log/vault"								# Audit log file directory
+ssh_user_ca_keys: "/etc/ssh/trusted-user-ca-keys.pem"       # Certificate file for Trusted user CA keys
+ssh_host_key: "/etc/ssh/ssh_host_rsa_key"                   # SSH server host key
+sshd_conf: "/etc/ssh/sshd_config"                           # SSH service configuration file
 ```
 
 Dependencies
@@ -42,13 +37,18 @@ Example Playbook
 ```
 ---
 
-- name: Configure Hashicorp Vault
-  hosts: localhost
-  connection: local
-  become: True
+- name: Configure SSH Server
+  hosts: ssh_server
+  become: yes
 
   roles:
-    - ansible-role-vault-configure
+
+    - name: Remove SSH config
+      role: ansible-role-vault-sshremove
+      tags:
+        - 'never'
+        - 'remove'
+
 ```
 
 License
