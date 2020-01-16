@@ -7,10 +7,15 @@
     method: GET
     status_code: 200
     dest: "{{ ssh_user_ca_keys }}"
-    others:
-      owner: "root"
-      group: "root"
-      mode: 0644
+
+# Setting file attributes in a separate task here because the
+# 'others' parameter has been removed from uri module since Ansible 2.9
+- name: Update trusted user file ownership and permissions
+  file:
+    path: "{{ ssh_user_ca_keys }}"
+    owner: "root"
+    group: "root"
+    mode: 0644
 
 # Left this here incase signed keys should be appended
 # - name: Add TrustedUserCAKeys path to SSH config
