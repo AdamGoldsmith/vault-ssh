@@ -1,11 +1,12 @@
 Role : ansible-role-vault-sshserver
 ===================================
 
-Configure Hashicorp's vault by
-* Enabling audit logging
-* Creating policies
-* Creating new admin token
-* Creating tokens
+Configure target's SSH daemon to accept trusted incoming users by
+* Write Vault's client signing public key to host's trusted user CA keys file
+* Sign server's host public key in Vault
+* Adding trusted user CA keys file to sshd_config
+* Adding HostKey to sshd_config
+* Adding HostCertificate to sshd_config
 
 Currently tested on these Operating Systems
 * Oracle Linux/RHEL/CentOS
@@ -21,14 +22,12 @@ Role Variables
 
 defaults/main.yml
 ```
-vault_addr: "{{ ansible_fqdn }}"							# Vault listener address
-vault_port: "8200"									# Vault listener port
-vault_user: "vault"									# User to run the vault systemd service
-vault_group: "vault"									# Group for vault user
-vault_keysfile: "~/.hashicorp_vault_keys.json"						# Local file storing master key shards
-vault_admintokenfile									# Local file storing admin token
-vault_provisionertokenfile								# Local file storing provisioner token
-audit_path: "/var/log/vault"								# Audit log file directory
+vault_sshkeysignertokenfile: "~/.hashicorp_sshkeysigner_token.json"   # Local file storing sshkeysigner token
+vault_addr: "10.1.42.10"                                              # Vault listener address
+vault_port: "8200"                                                    # Vault listener port
+sshd_conf: "/etc/ssh/sshd_config"                                     # SSH service configuration file
+ssh_user_ca_keys: "/etc/ssh/trusted-user-ca-keys.pem"                 # Certificate file for Trusted user CA keys
+ssh_host_key: "/etc/ssh/ssh_host_rsa_key"                             # SSH server host key
 ```
 
 Dependencies
@@ -42,13 +41,16 @@ Example Playbook
 ```
 ---
 
-- name: Configure Hashicorp Vault
-  hosts: localhost
-  connection: local
+- name: Configure SSH Server
+  hosts: ssh_server
   become: True
 
   roles:
-    - ansible-role-vault-configure
+  
+    - name: Configure SSH Server
+      role: ansible-role-vault-sshserver
+      tags:
+        - 'sshserver'
 ```
 
 License
