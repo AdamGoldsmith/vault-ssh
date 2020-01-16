@@ -1,11 +1,10 @@
 Role : ansible-role-vault-sshclient
 ===================================
 
-Configure Hashicorp's vault by
-* Enabling audit logging
-* Creating policies
-* Creating new admin token
-* Creating tokens
+Configure target's SSH user configuration for trusted SSH connectivity
+* Write Vault's host signing public key to system's known hosts file
+* Sign user's public key in Vault
+* Write signed key to user's certificate file
 
 Currently tested on these Operating Systems
 * Oracle Linux/RHEL/CentOS
@@ -21,14 +20,12 @@ Role Variables
 
 defaults/main.yml
 ```
-vault_addr: "{{ ansible_fqdn }}"							# Vault listener address
-vault_port: "8200"									# Vault listener port
-vault_user: "vault"									# User to run the vault systemd service
-vault_group: "vault"									# Group for vault user
-vault_keysfile: "~/.hashicorp_vault_keys.json"						# Local file storing master key shards
-vault_admintokenfile									# Local file storing admin token
-vault_provisionertokenfile								# Local file storing provisioner token
-audit_path: "/var/log/vault"								# Audit log file directory
+vault_sshkeysignertokenfile: "~/.hashicorp_sshkeysigner_token.json"   # Local file storing sshkeysigner token
+vault_addr: "10.1.42.10"                                              # Vault listener address
+vault_port: "8200"                                                    # Vault listener port
+ssh_user_name: "ansible"                                              # Owner of SSH public key to sign
+ssh_user_key: "/home/ansible/.ssh/id_rsa"                             # Location of user's SSH public key
+ssh_known_hosts: "/etc/ssh/ssh_known_hosts"                           # Loation of system's known hosts file
 ```
 
 Dependencies
@@ -42,13 +39,16 @@ Example Playbook
 ```
 ---
 
-- name: Configure Hashicorp Vault
-  hosts: localhost
-  connection: local
-  become: True
+- name: Configure SSH Client
+  hosts: ssh_client
+  become: yes
 
   roles:
-    - ansible-role-vault-configure
+
+    - name: Configure SSH Client
+      role: ansible-role-vault-sshclient
+      tags:
+        - 'sshclient'
 ```
 
 License
