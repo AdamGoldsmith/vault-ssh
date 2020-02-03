@@ -9,3 +9,5 @@ See [hashicorp documentation](https://www.vaultproject.io/docs/secrets/ssh/signe
 ### Overview of SSH key signing process
 ![Alt text](/images/key-signing-overview.png "Key signing overview")
 
+>__Note__: Highly recommended to have deployed Vault + Consul cluster using the Ansible playbooks at this [repository](https://github.com/AdamGoldsmith/consul-vault), or at least peruse for better understanding
+
