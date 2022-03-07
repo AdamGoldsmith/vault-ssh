@@ -23,6 +23,11 @@
     group: root
     mode: 0644
 
+- name: Generate an OpenSSH keypair (4096 bits, rsa)
+  community.crypto.openssh_keypair:
+    path: ~/.ssh/id_rsa
+  become: no
+
 - name: Read user public key
   slurp:
     src: "{{ ssh_user_key }}.pub"

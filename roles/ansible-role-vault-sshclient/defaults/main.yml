@@ -1,7 +1,7 @@
 ---
 
 vault_sshkeysignertokenfile: "~/.hashicorp_sshkeysigner_token.json"
-vault_addr: "10.1.42.10"
+vault_addr: "vault-01"
 vault_port: "8200"
 ssh_user_name: "ansible"
 ssh_user_key: "/home/ansible/.ssh/id_rsa"

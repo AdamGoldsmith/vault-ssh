@@ -1,0 +1,20 @@
+plugin: community.general.lxd
+url: unix:/var/lib/lxd/unix.socket
+state: RUNNING
+type_filter: both
+
+groupby:
+  lxd:
+    type: type
+    attribute: container
+  ssh:
+    type: pattern
+    attribute: ssh-*
+  # No underscores allowed in group names even though they are valid characters
+  # See workaround in static inventory
+  sshserver:
+    type: pattern
+    attribute: ssh-server-*
+  sshclient:
+    type: pattern
+    attribute: ssh-client-*

@@ -1,0 +1,10 @@
+localhost ansible_host=127.0.0.1 ansible_connection=local
+
+# Workaround to allow for underscores in LXD groups
+[sshserver]
+[ssh_server:children]
+sshserver
+
+[sshclient]
+[ssh_client:children]
+sshclient
