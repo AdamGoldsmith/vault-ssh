@@ -104,3 +104,11 @@
     state: present
   notify: reload ssh
   loop: "{{ ssh_config }}"
+
+- name: Allow SHA1 signature
+  lineinfile:
+    path: "{{ sshd_conf }}"
+    line: "CASignatureAlgorithms ^ssh-rsa"
+    state: "{{ allow_sha1_sig | default(True) | bool |
+      ternary('present','absent') }}"
+  notify: reload ssh

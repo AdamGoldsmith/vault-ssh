@@ -6,3 +6,4 @@ vault_port: "8200"
 sshd_conf: "/etc/ssh/sshd_config"
 ssh_user_ca_keys: "/etc/ssh/trusted-user-ca-keys.pem"
 ssh_host_key: "/etc/ssh/ssh_host_rsa_key"
+allow_sha1_sig: False
