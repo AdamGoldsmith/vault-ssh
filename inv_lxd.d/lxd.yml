@@ -11,7 +11,7 @@ groupby:
     type: pattern
     attribute: ssh-*
   # No underscores allowed in group names even though they are valid characters
-  # See workaround in static inventory
+  # See workaround in static inventory file
   sshserver:
     type: pattern
     attribute: ssh-server-*
